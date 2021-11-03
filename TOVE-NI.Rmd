@@ -1,0 +1,23 @@
+---
+title: "TOVE-NI"
+author: "Markus Fjellstad Israelsen"
+date: "3 11 2021"
+output: html_document
+---
+
+```{r}
+library(NIcalc)
+
+NiCalc_user = Sys.getenv("NiCalc_user")
+NiCalc_pass = Sys.getenv("NiCalc_pass")
+
+getToken(username = NiCalc_user, password = NiCalc_pass)
+
+myIndicators = getIndicators()
+
+myIndicatorData = getIndicatorValues(myIndicators$id[3])
+
+View(myIndicatorData[[1]])
+
+```
+
