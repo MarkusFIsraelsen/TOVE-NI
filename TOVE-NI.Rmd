@@ -7,6 +7,7 @@ output: html_document
 
 ```{r}
 library(NIcalc)
+library(dplyr)
 
 NiCalc_user = Sys.getenv("NiCalc_user")
 NiCalc_pass = Sys.getenv("NiCalc_pass")
@@ -14,10 +15,15 @@ NiCalc_pass = Sys.getenv("NiCalc_pass")
 getToken(username = NiCalc_user, password = NiCalc_pass)
 
 myIndicators = getIndicators()
+myIndicators = myIndicators %>% filter(name != "Lirype")
 
-myIndicatorData = getIndicatorValues(myIndicators$id[3])
+# Call Matts function
+myIndicatorData = get_data_from_indicators(myindicators = myIndicators)
+indicatorDf = myIndicatorData[[1]]$indicatorValues
+for(i in 2:length(myIndicatorData)){
+  indicatorDf = rbind(indicatorDf, myIndicatorData[[i]]$indicatorValues)
+}
 
-View(myIndicatorData[[1]])
 
 ```
 
