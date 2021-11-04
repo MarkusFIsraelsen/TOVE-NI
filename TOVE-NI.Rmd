@@ -5,9 +5,10 @@ date: "3 11 2021"
 output: html_document
 ---
 
-```{r}
+```{r, message = FALSE}
 library(NIcalc)
 library(dplyr)
+source(paste(getwd(),"/R/get_birds.R", sep=""))
 
 NiCalc_user = Sys.getenv("NiCalc_user")
 NiCalc_pass = Sys.getenv("NiCalc_pass")
@@ -17,7 +18,7 @@ getToken(username = NiCalc_user, password = NiCalc_pass)
 myIndicators = getIndicators()
 myIndicators = myIndicators %>% filter(name != "Lirype")
 
-# Call Matts function
+# Call Matt's function
 myIndicatorData = get_data_from_indicators(myindicators = myIndicators)
 indicatorDf = myIndicatorData[[1]]$indicatorValues
 for(i in 2:length(myIndicatorData)){
