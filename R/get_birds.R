@@ -10,13 +10,13 @@
 #' }
 
 get_data_from_indicators<- function(myindicators){
-myindicatorsTib=dplyr::as_tibble(myindicators)
-
-listofdfs=list()
-for (i in 1:length(myindicatorsTib$id)){
-  indicatorValues=NIcalc::getIndicatorValues(indicatorID = myindicatorsTib$id[i])
-  listofdfs[[i]]=indicatorValues}
-
-  return(listofdfs)
+  myindicatorsTib=dplyr::as_tibble(myindicators)
+  
+  listofdfs=list()
+  for (i in 1:length(myindicatorsTib$id)){
+    indicatorValues=NIcalc::getIndicatorValues(indicatorID = myindicatorsTib$id[i])
+    listofdfs[[i]]=indicatorValues}
+  
+ return(listofdfs)
 }
 
