@@ -11,18 +11,23 @@ library(LivingNorwayR)
 library(NIcalc)
 library(tidyverse)
 library(readxl)
+library(rstudioapi)
 ```
 
 ## Step 1 - get token for NIcalc
 
 ```{r get token}
+# Get user's username and password
+uid = rstudioapi::showPrompt(title = "User Name", message = "Please enter your username", default = "")
+upass = rstudioapi::askForPassword(prompt = "Please enter your password")
+
 # get token
-NIcalc::getToken(username=Sys.getenv("NIcalc_user"), password = Sys.getenv("NIcalc_pass"))
+#NIcalc::getToken(username=Sys.getenv("NIcalc_user"), password = Sys.getenv("NIcalc_pass"))
+NIcalc::getToken(username=uid, password = upass)
 
 ```
 
 ## Step 2 - get TOV-E Dataset from NINA IPT 
-
 
 ```{r}
 
@@ -32,7 +37,6 @@ datasetURL <- "https://ipt.nina.no/archive.do?r=tove_birdsampling"
 localDataLoc <- file.path(paste0(here::here(),"/data"), "TOVEData.zip")
 download.file(datasetURL, localDataLoc, mode = "wb")
 ```
-
 
 ## Step 3 - Build LivingNorwayR Archive Object
 
@@ -53,7 +57,7 @@ head(TOVE_eventTableDF)
 ```{r NIcalc }
 birdList = read_xlsx(paste0(here::here(), "/data/BirdList.xlsx")) %>% select(Id) %>% rename(id = Id)
 allmyindicators<-NIcalc::getIndicators()
-myIndicators = left_join(birdList, allmyindicators, by = "id")
+myindicators = left_join(birdList, allmyindicators, by = "id")
 source(paste0(here::here(),"/R/get_birds.R"))
 myindicator_data=get_data_from_indicators(myindicators)
 
@@ -92,5 +96,4 @@ JoinTOVE %>%
   group_by(vernacularName) %>% 
   arrange(eventDate)
 ```
-
 
