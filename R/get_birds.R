@@ -17,6 +17,6 @@ get_data_from_indicators<- function(myindicators){
     indicatorValues=NIcalc::getIndicatorValues(indicatorID = myindicatorsTib$id[i])
     listofdfs[[i]]=indicatorValues}
   
-  return(listofdfs)
+ return(listofdfs)
 }
 
