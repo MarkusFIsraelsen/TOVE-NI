@@ -1,0 +1,96 @@
+---
+title: "Get TOV-E Data"
+author: "Matt"
+date: "3 11 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(LivingNorwayR)
+library(NIcalc)
+library(tidyverse)
+library(readxl)
+```
+
+## Step 1 - get token for NIcalc
+
+```{r get token}
+# get token
+NIcalc::getToken(username=Sys.getenv("NIcalc_user"), password = Sys.getenv("NIcalc_pass"))
+
+```
+
+## Step 2 - get TOV-E Dataset from NINA IPT 
+
+
+```{r}
+
+# The URL where the Darwin Core file for the TOV-E bird survey data is housed
+datasetURL <- "https://ipt.nina.no/archive.do?r=tove_birdsampling"
+# Download the Darwin Core file 
+localDataLoc <- file.path(paste0(here::here(),"/data"), "TOVEData.zip")
+download.file(datasetURL, localDataLoc, mode = "wb")
+```
+
+
+## Step 3 - Build LivingNorwayR Archive Object
+
+```{r LivingNorwayR}
+TOVEArchive <- initializeDwCArchive(localDataLoc, "UTF-8")
+TOVEArchive
+TOVEOccTable <- TOVEArchive$getExtensionTables("occurrence")[[1]]
+TOVEOccTableDF <- TOVEOccTable$exportAsDataFrame()
+TOVE_event=TOVEArchive$getCoreTable()
+TOVE_eventTableDF=TOVE_event$exportAsDataFrame()
+
+head(TOVEOccTableDF)
+head(TOVE_eventTableDF)
+```
+
+## Step 4 - Get NIcalc indicator data
+
+```{r NIcalc }
+birdList = read_xlsx(paste0(here::here(), "/data/BirdList.xlsx")) %>% select(Id) %>% rename(id = Id)
+allmyindicators<-NIcalc::getIndicators()
+myIndicators = left_join(birdList, allmyindicators, by = "id")
+source(paste0(here::here(),"/R/get_birds.R"))
+myindicator_data=get_data_from_indicators(myindicators)
+
+myindicator_data[[1]]$indicatorValues$indicatorName[1]
+
+indicatorNames=unlist(lapply(myindicator_data,function(x) x[[1]]$indicatorName[1]))
+
+indicatorNames %in%TOVEOccTableDF$vernacularName
+
+```
+
+## Step 5 - Filter the TOV-E data by the indicator species
+
+```{r filter TOVE}
+# filter TOVE data by the indicator species
+TOVE_Matched_2_indicators=TOVEOccTableDF %>% 
+  filter(vernacularName %in%
+           indicatorNames)
+
+head(TOVE_Matched_2_indicators)
+
+```
+
+## Step 6 - Join TOV-E Occurrences and Event tables for indicator species
+
+```{r join TOV-E}
+JoinTOVE=TOVE_eventTableDF %>% 
+  inner_join(.,TOVEOccTableDF, by= "eventID")
+
+```
+
+## Step 7 - Sort the data by eventDate and group by species name
+
+```{r}
+JoinTOVE %>% 
+  group_by(vernacularName) %>% 
+  arrange(eventDate)
+```
+
+
