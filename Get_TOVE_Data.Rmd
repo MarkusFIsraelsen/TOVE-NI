@@ -40,12 +40,14 @@ datasetURL <- "https://ipt.nina.no/archive.do?r=tove_birdsampling"
 # Download the Darwin Core file 
 localDataLoc <- file.path(paste0(here::here(),"/data"), "TOVEData.zip")
 download.file(datasetURL, localDataLoc, mode = "wb")
+
 ```
 =======
 
 ## Step 3 - Build LivingNorwayR Archive Object
 
 ```{r LivingNorwayR}
+
 TOVEArchive <- initializeDwCArchive(localDataLoc, "UTF-8")
 TOVEArchive
 TOVEOccTable <- TOVEArchive$getExtensionTables("occurrence")[[1]]
@@ -55,11 +57,13 @@ TOVE_eventTableDF=TOVE_event$exportAsDataFrame()
 
 head(TOVEOccTableDF)
 head(TOVE_eventTableDF)
+
 ```
 
 ## Step 4 - Get NIcalc indicator data
 
-```{r NIcalc }
+```{r NIcalc}
+
 birdList = read_xlsx(paste0(here::here(), "/data/BirdList.xlsx")) %>% select(Id) %>% rename(id = Id)
 allmyindicators<-NIcalc::getIndicators()
 myindicators = left_join(birdList, allmyindicators, by = "id")
@@ -78,6 +82,7 @@ indicatorNames %in%TOVEOccTableDF$vernacularName
 ## Step 5 - Filter the TOV-E data by the indicator species
 
 ```{r filter TOVE}
+
 # filter TOVE data by the indicator species
 TOVE_Matched_2_indicators=TOVEOccTableDF %>% 
   filter(vernacularName %in%
@@ -90,6 +95,7 @@ head(TOVE_Matched_2_indicators)
 ## Step 6 - Join TOV-E Occurrences and Event tables for indicator species
 
 ```{r join TOV-E}
+
 JoinTOVE=TOVE_eventTableDF %>% 
   inner_join(.,TOVEOccTableDF, by= "eventID")
 
@@ -98,9 +104,11 @@ JoinTOVE=TOVE_eventTableDF %>%
 ## Step 7 - Sort the data by eventDate and group by species name
 
 ```{r}
+
 JoinTOVE %>% 
   group_by(vernacularName) %>% 
   arrange(eventDate)
+
 ```
 
 
