@@ -59,6 +59,14 @@ TOVE_eventTableDF = TOVE_event$exportAsDataFrame()
 #head(TOVEOccTableDF)
 #head(TOVE_eventTableDF)
 
+
+TOVE_event = TOVEArchive$getCoreTable()
+TOVE_eventTableDF = TOVE_event$exportAsDataFrame()
+
+head(TOVEOccTableDF)
+head(TOVE_eventTableDF)
+
+
 ```
 
 ## Step 4 - Get NIcalc indicator data
@@ -88,7 +96,6 @@ indicatorNames = unlist(lapply(myindicator_data,function(x) x[[1]]$indicatorName
 TOVE_Matched_2_indicators_OCC = TOVEOccTableDF %>% 
   filter(vernacularName %in%
            indicatorNames)
-
 obsID = TOVE_Matched_2_indicators_OCC$id
 TOVE_Matched_2_indicators_EVE = TOVE_eventTableDF %>%
   filter(id %in%
@@ -134,14 +141,11 @@ MeanTOVE = TOVE_Matched_2_indicators %>%
 ```{r}
 
 
-
 ```
+
 
 ## Step 10 - Export the new bird indices to the NI database
 
 ```{r}
 
 ```
-
-
-=======
