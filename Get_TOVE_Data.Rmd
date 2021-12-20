@@ -49,14 +49,23 @@ download.file(datasetURL, localDataLoc, mode = "wb")
 ```{r LivingNorwayR}
 
 TOVEArchive <- initializeDwCArchive(localDataLoc, "UTF-8")
-TOVEArchive
+#TOVEArchive
 TOVEOccTable <- TOVEArchive$getExtensionTables("occurrence")[[1]]
 TOVEOccTableDF <- TOVEOccTable$exportAsDataFrame()
+TOVEOccTableDF = TOVEOccTableDF %>% mutate(vernacularName = ifelse(vernacularName == "Gråfluesnapper", "Grå fluesnapper", ifelse(vernacularName == "Fiskemåke", "Fiskemåke ferskvann", vernacularName)))
+TOVE_event = TOVEArchive$getCoreTable()
+TOVE_eventTableDF = TOVE_event$exportAsDataFrame()
+
+#head(TOVEOccTableDF)
+#head(TOVE_eventTableDF)
+
+
 TOVE_event = TOVEArchive$getCoreTable()
 TOVE_eventTableDF = TOVE_event$exportAsDataFrame()
 
 head(TOVEOccTableDF)
 head(TOVE_eventTableDF)
+
 
 ```
 
@@ -71,11 +80,11 @@ myindicators = left_join(birdList, allmyindicators, by = "id")
 source(paste0(here::here(),"/R/get_birds.R"))
 myindicator_data = get_data_from_indicators(myindicators)
 
-myindicator_data[[1]]$indicatorValues$indicatorName[1]
+#myindicator_data[[1]]$indicatorValues$indicatorName[1]
 
 indicatorNames = unlist(lapply(myindicator_data,function(x) x[[1]]$indicatorName[1]))
 
-indicatorNames %in%TOVEOccTableDF$vernacularName
+#indicatorNames %in%TOVEOccTableDF$vernacularName
 
 ```
 
@@ -84,11 +93,14 @@ indicatorNames %in%TOVEOccTableDF$vernacularName
 ```{r filter TOVE}
 
 # filter TOVE data by the indicator species
-TOVE_Matched_2_indicators = TOVEOccTableDF %>% 
+TOVE_Matched_2_indicators_OCC = TOVEOccTableDF %>% 
   filter(vernacularName %in%
            indicatorNames)
-
-head(TOVE_Matched_2_indicators)
+obsID = TOVE_Matched_2_indicators_OCC$id
+TOVE_Matched_2_indicators_EVE = TOVE_eventTableDF %>%
+  filter(id %in%
+           obsID)
+#head(TOVE_Matched_2_indicators)
 
 ```
 
@@ -96,8 +108,11 @@ head(TOVE_Matched_2_indicators)
 
 ```{r join TOV-E}
 
-JoinTOVE = TOVE_eventTableDF %>% 
-  inner_join(.,TOVEOccTableDF, by= "eventID")
+# JoinTOVE = TOVE_eventTableDF %>% 
+#   inner_join(.,TOVEOccTableDF, by= "eventID")
+
+JoinTOVE = TOVE_Matched_2_indicators_EVE %>%
+  inner_join(., TOVE_Matched_2_indicators_OCC, by = "id")
 
 ```
 
@@ -105,7 +120,7 @@ JoinTOVE = TOVE_eventTableDF %>%
 
 ```{r}
 
-JoinTOVE %>% 
+JoinTOVE = JoinTOVE %>% 
   group_by(vernacularName) %>% 
   arrange(eventDate)
 
@@ -115,19 +130,22 @@ JoinTOVE %>%
 
 ```{r}
 
+MeanTOVE = TOVE_Matched_2_indicators %>% 
+  group_by(scientificName, locationID, year) %>% 
+  summarise(meanCount = mean(organismQuantity), sdCount = sd(organismQuantity))
+
 ```
 
 ## Step 9 - Calculate the bird indices
 
 ```{r}
 
+
 ```
+
 
 ## Step 10 - Export the new bird indices to the NI database
 
 ```{r}
 
 ```
-
-
-=======
