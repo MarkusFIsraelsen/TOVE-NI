@@ -1,0 +1,163 @@
+---
+title: "Skogshøns"
+author: "Markus Fjellstad Israelsen"
+date: '2022-10-07'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r Load library}
+
+library(dplyr)
+library(lubridate)
+library(readr)
+library(readxl)
+library(writexl)
+library(ggplot2)
+library(leaflet)
+library(sp)
+library(tidyverse)
+library(lubridate)
+library(rgdal)
+library(RColorBrewer)
+library(RSQLite)
+library(shiny)
+library(maps)
+
+```
+
+```{r Import data}
+
+occurrence = read_delim("~/Naturindeks for Norge/Naturindeks 2022/Oppgaver 2022/TOV-E/0054401-220831081235567/occurrence.txt", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+# Export raw data for fjellrype, orrfugl and storfugl
+fjellOut = occurrence %>% filter(species == "Lagopus muta")
+orrOut = occurrence %>% filter(species == "Lyrurus tetrix")
+storOut = occurrence %>% filter(species == "Tetrao urogallus")
+write_xlsx(fjellOut, path = "~/Naturindeks for Norge/Naturindeks 2022/Oppgaver 2022/TOV-E/fjellrypeRådata.xlsx")
+write_xlsx(orrOut, path = "~/Naturindeks for Norge/Naturindeks 2022/Oppgaver 2022/TOV-E/orrfuglRådata.xlsx")
+write_xlsx(storOut, path = "~/Naturindeks for Norge/Naturindeks 2022/Oppgaver 2022/TOV-E/storfuglRådata.xlsx")
+
+occ = occurrence %>% dplyr::select(gbifID, type, datasetName, occurrenceID, organismQuantity, organismQuantityType, occurrenceRemarks, eventID, eventDate, eventTime, year, month, day, sampleSizeValue, sampleSizeUnit, samplingEffort, locationID, stateProvince, municipality, locality, decimalLatitude, decimalLongitude, species, elevation, vernacularName)
+occ = occ %>% filter(species == "Lagopus muta" | species == "Lyrurus tetrix" | species == "Tetrao urogallus")
+
+fjellrype = occ %>% filter(species == "Lagopus muta") %>% mutate(count = organismQuantity*2)
+orrfugl = occ %>% filter(species == "Lyrurus tetrix") %>% mutate(count = organismQuantity*2)
+storfugl = occ %>% filter(species == "Tetrao urogallus") %>% mutate(count = organismQuantity*2)
+
+
+
+```
+
+```{r}
+
+# Make a background map of Norway that can be used in ggplot
+norway = map_data("world") %>% filter(region == "Norway") %>% mutate(subregion = ifelse(is.na(subregion), "mainland", subregion))
+norway = norway %>% filter(subregion != "Jan Mayen" & subregion != "Svalbard")
+norway = norway %>% select(lat, long, group)
+
+# Repeat the "background map" to equal the number of years with observations for fjellrype
+fjellNorway = norway[rep(1:nrow(norway), length(unique(fjellrype$year))), ]
+fjellNorway = fjellNorway %>% mutate(year = sort(rep(min(fjellrype$year):max(fjellrype$year), dim(norway)[1])), count = 0)
+
+# Plot the Norway background map for each year and the observation points 
+fjellNorwayMap = ggplot(fjellrype) +
+  geom_polygon(data = fjellNorway, aes(x = long, y = lat, group = group, fill = "steelblue")) + 
+  geom_point(aes(y = decimalLatitude, x = decimalLongitude), color = "black", shape=21, fill="orange", size = 2) + 
+  facet_wrap(~ year) + scale_fill_manual(values = "steelblue") + 
+  theme(legend.position = "none") +
+  xlab("Lengdegrad") +
+  ylab("Breddegrad")+
+  labs(title = "Fjellrype")
+
+
+# Export map
+ggsave(plot = fjellNorwayMap, filename = "C:/Users/markus.israelsen/OneDrive - NINA/Naturindeks for Norge/Naturindeks 2022/Oppgaver 2022/TOV-E/fjellNorwayMap.png", width = 20, height = 20, units = "cm", dpi = 600)
+
+# Plot the rock ptarmigan count per year and state
+fjellrypeCountState = ggplot(data = fjellrype, aes(x = stateProvince, y = count)) +
+  geom_col(fill = "orange", width = 0.5) +
+  facet_wrap(~ year) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title.y = element_text(size = 14),
+    strip.text.x = element_text(size = 12)) +
+  xlab("") +
+  ylab("Antall fjellrype observasjoner")
+
+ggsave(plot = fjellrypeCountState, filename = "C:/Users/markus.israelsen/OneDrive - NINA/Naturindeks for Norge/Naturindeks 2022/Oppgaver 2022/TOV-E/fjellrypeCountState.png", width = 25, height = 20, units = "cm", dpi = 600)
+
+# Repeat the "background map" to equal the number of years with observations for Orrfugl
+orrNorway = norway[rep(1:nrow(norway), length(unique(orrfugl$year))), ]
+orrNorway = orrNorway %>% mutate(year = sort(rep(min(orrfugl$year):max(orrfugl$year), dim(norway)[1])), count = 0)
+
+# Plot the Norway background map for each year and the observation points 
+orrNorwayMap = ggplot(orrfugl) +
+  geom_polygon(data = orrNorway, aes(x = long, y = lat, group = group, fill = "steelblue")) + 
+  geom_point(aes(y = decimalLatitude, x = decimalLongitude), color = "black", shape=21, fill="orange", size = 2) + 
+  facet_wrap(~ year) + scale_fill_manual(values = "steelblue") + 
+  theme(legend.position = "none") +
+  xlab("Lengdegrad") +
+  ylab("Breddegrad") +
+  labs(title = "Orrfugl")
+
+# Export map
+ggsave(plot = orrNorwayMap, filename = "C:/Users/markus.israelsen/OneDrive - NINA/Naturindeks for Norge/Naturindeks 2022/Oppgaver 2022/TOV-E/orrNorwayMap.png", width = 20, height = 20, units = "cm", dpi = 600)
+
+# Plot the black grouse count per year and state
+orrfuglCountState = ggplot(data = orrfugl, aes(x = stateProvince, y = count)) +
+  geom_col(fill = "orange", width = 0.5) +
+  facet_wrap(~ year) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title.y = element_text(size = 14),
+    strip.text.x = element_text(size = 12)) +
+  xlab("") +
+  ylab("Antall orrfugl observasjoner")
+
+ggsave(plot = orrfuglCountState, filename = "C:/Users/markus.israelsen/OneDrive - NINA/Naturindeks for Norge/Naturindeks 2022/Oppgaver 2022/TOV-E/orrfuglCountState.png", width = 25, height = 20, units = "cm", dpi = 600)
+
+
+# Repeat the "background map" to equal the number of years with observations for Storfugl
+storNorway = norway[rep(1:nrow(norway), length(unique(storfugl$year))), ]
+storNorway = storNorway %>% mutate(year = sort(rep(min(storfugl$year):max(storfugl$year), dim(norway)[1])), count = 0)
+
+# Plot the Norway background map for each year and the observation points 
+storNorwayMap = ggplot(storfugl) +
+  geom_polygon(data = storNorway, aes(x = long, y = lat, group = group, fill = "steelblue")) + 
+  geom_point(aes(y = decimalLatitude, x = decimalLongitude), color = "black", shape=21, fill="orange", size = 2) + 
+  facet_wrap(~ year) + scale_fill_manual(values = "steelblue") + 
+  theme(legend.position = "none") +
+  xlab("Lengdegrad") +
+  ylab("Breddegrad") +
+  labs(title = "Storfugl")
+
+# Export map
+ggsave(plot = storNorwayMap, filename = "C:/Users/markus.israelsen/OneDrive - NINA/Naturindeks for Norge/Naturindeks 2022/Oppgaver 2022/TOV-E/storNorwayMap.png", width = 20, height = 20, units = "cm", dpi = 600)
+
+# Plot the Capercaillie count per year and state
+storfuglCountState = ggplot(data = storfugl, aes(x = stateProvince, y = count)) +
+  geom_col(fill = "orange", width = 0.5) +
+  facet_wrap(~ year) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title.y = element_text(size = 14),
+    strip.text.x = element_text(size = 12)) +
+  xlab("") +
+  ylab("Antall storfugl observasjoner")
+
+ggsave(plot = storfuglCountState, filename = "C:/Users/markus.israelsen/OneDrive - NINA/Naturindeks for Norge/Naturindeks 2022/Oppgaver 2022/TOV-E/storfuglCountState.png", width = 25, height = 20, units = "cm", dpi = 600)
+
+
+
+
+  
+```
+
